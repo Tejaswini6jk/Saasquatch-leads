@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaSquatch Leads Dashboard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 20px; background-color: #f9fafb; font-family: system-ui; }
+        .score-badge { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+        .score-high { background-color: #dcfce7; color: #166534; }
+        .score-medium { background-color: #fef3c7; color: #92400e; }
+        .score-low { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function ScoreBadge({ score }) {
+            const s = Number(score || 0);
+            const className = s >= 80 ? 'score-high' : s >= 50 ? 'score-medium' : 'score-low';
+            return <span className={`score-badge ${className}`}>{s}</span>;
+        }
+
+        function LeadTable({ leads, onFilter }) {
+            const [search, setSearch] = useState('');
+            const [sortKey, setSortKey] = useState('score');
+            const [sortDir, setSortDir] = useState('desc');
+
+            const filtered = leads.filter(lead => {
+                const matchesSearch = !search || 
+                    lead.company_name.toLowerCase().includes(search.toLowerCase()) ||
+                    lead.industry.toLowerCase().includes(search.toLowerCase()) ||
+                    lead.region.toLowerCase().includes(search.toLowerCase());
+                return matchesSearch;
+            }).sort((a, b) => {
+                const aVal = a[sortKey];
+                const bVal = b[sortKey];
+                if (sortDir === 'asc') return aVal > bVal ? 1 : -1;
+                return aVal < bVal ? 1 : -1;
+            });
+
+            const handleSort = (key) => {
+                if (sortKey === key) {
+                    setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+                } else {
+                    setSortKey(key);
+                    setSortDir('asc');
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-2xl shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-semibold">Leads</h2>
+                        <input
+                            type="text"
+                            placeholder="Search leads..."
+                            className="border rounded-lg px-3 py-2 w-64"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-gray-600 border-b">
+                                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-50" onClick={() => handleSort('company_name')}>
+                                        Company {sortKey === 'company_name' && (sortDir === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-50" onClick={() => handleSort('industry')}>
+                                        Industry {sortKey === 'industry' && (sortDir === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-50" onClick={() => handleSort('region')}>
+                                        Region {sortKey === 'region' && (sortDir === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-50" onClick={() => handleSort('revenue_estimate')}>
+                                        Revenue {sortKey === 'revenue_estimate' && (sortDir === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                    <th className="py-3 px-4 cursor-pointer hover:bg-gray-50" onClick={() => handleSort('score')}>
+                                        Score {sortKey === 'score' && (sortDir === 'asc' ? '↑' : '↓')}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map((lead, idx) => (
+                                    <tr key={idx} className="border-b hover:bg-gray-50">
+                                        <td className="py-3 px-4 font-medium">{lead.company_name}</td>
+                                        <td className="py-3 px-4">{lead.industry}</td>
+                                        <td className="py-3 px-4">{lead.region}</td>
+                                        <td className="py-3 px-4">${Number(lead.revenue_estimate).toLocaleString()}</td>
+                                        <td className="py-3 px-4"><ScoreBadge score={lead.score} /></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        function InsightsChart({ leads }) {
+            const distribution = [
+                { range: '0-19', count: leads.filter(l => l.score >= 0 && l.score <= 19).length },
+                { range: '20-39', count: leads.filter(l => l.score >= 20 && l.score <= 39).length },
+                { range: '40-59', count: leads.filter(l => l.score >= 40 && l.score <= 59).length },
+                { range: '60-79', count: leads.filter(l => l.score >= 60 && l.score <= 79).length },
+                { range: '80-100', count: leads.filter(l => l.score >= 80 && l.score <= 100).length }
+            ];
+
+            const maxCount = Math.max(...distribution.map(d => d.count));
+
+            return (
+                <div className="bg-white rounded-2xl shadow p-6">
+                    <h2 className="text-xl font-semibold mb-4">Score Distribution</h2>
+                    <div className="space-y-3">
+                        {distribution.map((item, idx) => (
+                            <div key={idx} className="flex items-center">
+                                <div className="w-16 text-sm text-gray-600">{item.range}</div>
+                                <div className="flex-1 mx-3">
+                                    <div className="bg-gray-200 rounded-full h-4">
+                                        <div 
+                                            className="bg-indigo-600 h-4 rounded-full transition-all duration-300"
+                                            style={{ width: `${maxCount > 0 ? (item.count / maxCount) * 100 : 0}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                                <div className="w-8 text-sm font-medium">{item.count}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function Dashboard() {
+            const [leads, setLeads] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                fetch('http://localhost:5000/api/leads')
+                    .then(res => res.json())
+                    .then(data => {
+                        setLeads(data || []);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error('Failed to fetch leads:', err);
+                        setLoading(false);
+                    });
+            }, []);
+
+            const exportLeads = () => {
+                const csv = [
+                    'Company,Industry,Region,Revenue,Score',
+                    ...leads.map(lead => 
+                        `${lead.company_name},${lead.industry},${lead.region},${lead.revenue_estimate},${lead.score}`
+                    )
+                ].join('\n');
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'leads.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            if (loading) {
+                return <div className="text-center py-8">Loading leads...</div>;
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto">
+                    <header className="mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900">SaaSquatch Leads</h1>
+                        <p className="text-gray-600">AI-Powered Lead Scoring & Insights Dashboard</p>
+                    </header>
+
+                    <div className="mb-6 flex justify-between items-center">
+                        <div className="text-sm text-gray-600">
+                            Showing {leads.length} leads
+                        </div>
+                        <button 
+                            onClick={exportLeads}
+                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+                        >
+                            Export CSV
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <LeadTable leads={leads} />
+                        </div>
+                        <div>
+                            <InsightsChart leads={leads} />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<Dashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>
