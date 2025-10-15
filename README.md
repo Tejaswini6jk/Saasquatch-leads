@@ -4,7 +4,6 @@
 
 ![SaaSquatch Leads Logo](https://img.shields.io/badge/SaaSquatch-Leads-blue?style=for-the-badge&logo=react)
 ![Version](https://img.shields.io/badge/version-1.0.0-green?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)
 ![React](https://img.shields.io/badge/React-18.3.1-blue?style=for-the-badge&logo=react)
 ![Flask](https://img.shields.io/badge/Flask-3.0.3-green?style=for-the-badge&logo=flask)
